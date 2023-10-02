@@ -122,6 +122,9 @@ IF NOT EXIST %ROOT_DIR%apps\BAE\bae.exe (
   START "" %baeManualUrl%
   Start explorer.exe "%ROOT_DIR%apps"
   set /p userinput="Have you downloaded and placed the BAE folder in the location specified above? (Y): "
+  IF %userinput% == "Y" (
+    Start explorer.exe "%ROOT_DIR%apps"
+  )
 ) ELSE (
   echo BAE installation found!
 )
@@ -183,7 +186,12 @@ try(
   echo Python 3.9+ is required to build the Python Compilers to exe's
   echo Please install python 3.9+ to continue
   echo Then run 'pip install pyinstaller'
-  echo Re-run this setup and it will build the python compilers needed.
+  echo And re-run this setup and it will build the python compilers needed.
+  echo Or you can download the buildMods.exe and installMods.exe and place them in "./apps"
+  set /p userinput="Would you like to download them now? (Y): "
+  IF /I "!userinput!" == "Y" (
+      START "" "https://github.com/Picklelord/sf_modding_template/releases/tag/v0.1.1"
+  )
 )
 
 
