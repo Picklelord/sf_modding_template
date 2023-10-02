@@ -2,6 +2,7 @@ import sys
 import os
 import json
 import shutil
+import traceback
 from collections import OrderedDict
 import subprocess
 
@@ -9,10 +10,11 @@ ROOT = ""
 # set ROOT global variable
 if getattr(sys, 'frozen', False):
     # If the script is running as a compiled .exe via PyInstaller
-    ROOT = os.path.dirname(sys.executable).replace("\\", "/") + "/"
+    ROOT = os.path.dirname(sys.executable).replace("\\", "/").rsplit("/",1)[0] + "/"
 else:
     # If the script is running as a raw .py file
-    ROOT = os.path.dirname(os.path.abspath(__file__)).replace("\\", "/") + "/"
+    ROOT = os.path.dirname(os.path.abspath(__file__)).replace("\\", "/").rsplit("/",2)[0] + "/"
+
 
 def merge_text_files(directory, output_filepath):
     """
@@ -25,13 +27,17 @@ def merge_text_files(directory, output_filepath):
     original_filepath = os.path.join(directory, "original.txt")
     if os.path.exists(original_filepath):
         with open(original_filepath, 'r') as f:
-            all_lines.extend(f.readlines())
+            lines = f.readlines()
+            lines.append("\n")
+            all_lines.extend(lines)
 
     # Process all other .txt files and append to all_lines
-    for filename in os.listdir(directory):
+    for filename in sorted(os.listdir(directory)):
         if filename.endswith(".txt") and filename != "original.txt":
             with open(os.path.join(directory, filename), 'r') as f:
-                all_lines.extend(f.readlines())
+                lines = f.readlines()
+                lines.append("\n")
+                all_lines.extend(lines)
 
     # Write all lines to the output file
     with open(output_filepath, 'w') as f:
@@ -47,24 +53,25 @@ def parse_ini(filepath):
         lines = f.readlines()
 
     sections = OrderedDict()
-    current_section = None
+    sections["NoSection"] = OrderedDict()
+    current_section = sections["NoSection"]
 
-    for line in lines:
-        line = line.strip()
+    for fullLine in lines:
+        fullLine = fullLine.strip()
 
         # Skip comments or empty lines
-        if not line or line.startswith(";"):
+        if not fullLine or fullLine.startswith(";") or fullLine.startswith("#"):
             continue
 
         # Detect sections
-        if line.startswith("[") and line.endswith("]"):
-            section_name = line[1:-1].strip()
+        if fullLine.startswith("[") and fullLine.endswith("]"):
+            section_name = fullLine[1:-1].strip()
             sections[section_name] = OrderedDict()
             current_section = sections[section_name]
 
         # Detect key=value pairs
-        elif "=" in line and current_section is not None:
-            key, value = map(str.strip, line.split("=", 1))
+        elif "=" in fullLine and current_section is not None:
+            key, value = map(str.strip, fullLine.split("=", 1))
             current_section[key] = value
 
     return sections
@@ -82,7 +89,7 @@ def merge_ini_files(directory, output_filepath):
 
     # Process all other .ini files and overwrite/add to merged_data
     for filename in os.listdir(directory):
-        if filename.endswith(".ini") and filename != "original.ini":
+        if filename.endswith(".ini") and filename != "original.ini" and not filename.startswith("WIP_"):
             file_data = parse_ini(os.path.join(directory, filename))
             for section, keys in file_data.items():
                 if section not in merged_data:
@@ -91,10 +98,18 @@ def merge_ini_files(directory, output_filepath):
 
     with open(output_filepath, 'w') as f:
         for section, keys in merged_data.items():
-            f.write(f"[{section}]\n")
-            for key, value in keys.items():
-                f.write(f"{key}={value}\n")
-            f.write("\n")
+            if section == "NoSection" and len(keys.items())>=1:
+                f.write(f"[{section}]\n")
+                for key, value in keys.items():
+                    f.write(f"{key}={value}\n")
+                f.write("\n")
+
+        for section, keys in merged_data.items():
+            if section != "NoSection":
+                f.write(f"[{section}]\n")
+                for key, value in keys.items():
+                    f.write(f"{key}={value}\n")
+                f.write("\n")
 
     print(f"Merged INI file has been created: {output_filepath}")
 
@@ -110,6 +125,36 @@ def getConfigData():
             print("Failed to load ./config.json")
             return
     return CONFIG
+
+def findAllFilesInDir(directory):
+    """Recursive function to discover files up to a certain depth."""
+    foundFiles = []
+
+    for root, dirs, files in os.walk(directory):
+        # Limit the search depth
+        for file in files:
+            foundFiles.append(os.path.join(root, file))
+    print(f"Found {len(foundFiles)} files to transer from: {directory}")
+    return foundFiles
+def transferAllDirsAndFiles(src, dest):
+    # Walk the source directory
+    allFiles = findAllFilesInDir(src)
+    print(src)
+    print(dest)
+    for src_file in allFiles:
+        src_file = src_file.replace("\\","/")
+        dest_file = src_file.replace(src, dest)
+
+        # If destination directory doesn't exist, create it
+        if not os.path.exists(dest_file.rsplit("/",1)[0]):
+            os.makedirs(dest_file.rsplit("/",1)[0])
+
+        src_file = src_file.replace("/", "\\")
+        dest_file = dest_file.replace("/", "\\")
+
+        print(f"  - transfering:  {src_file}")
+        res = shutil.copy2(src_file, dest_file)
+        print(f"       - result = {res}")
 
 def main():
     # get config data
@@ -135,35 +180,53 @@ def main():
         os.makedirs(ROOT+CONFIG["starfieldMyGameBuildLocation"])
 
     # build INI and TXT files
-    installIniFiles = ["StartingCommands.txt", "Starfield.ini"]
+    installIniFiles = ["StartingCommands.txt", "Starfield.ini", "Low.ini", "Medium.ini", "High.ini", "Ultra.ini"]
     myGamesIniFiles = ["StarfieldCustom.ini", "StarfieldPrefs.ini", "StarfieldHotkeys.ini"]
     for fileName in installIniFiles:
         logData.append(f"\nBuilding: {fileName}")
-        merge_text_files(
-            ROOT+CONFIG["iniModsPath"]+f"{fileName}/",
-            ROOT+CONFIG["starfieldBaseBuildLocation"]+f"/{fileName}"
-        )
+        if fileName.endswith(".ini"):
+            merge_ini_files(
+                ROOT+CONFIG["iniModsPath"]+f"{fileName}/",
+                ROOT+CONFIG["starfieldBaseBuildLocation"]+f"/{fileName}"
+            )
+        else:
+            merge_text_files(
+                ROOT+CONFIG["iniModsPath"]+f"{fileName}/",
+                ROOT+CONFIG["starfieldBaseBuildLocation"]+f"/{fileName}"
+            )
         logData.append(f"\nSuccessfully Built: {fileName}")
     for fileName in myGamesIniFiles:
         logData.append(f"\nBuilding: {fileName}")
-        merge_text_files(
-            ROOT+CONFIG["iniModsPath"]+f"{fileName}/",
-            ROOT+CONFIG["starfieldMyGameBuildLocation"]+f"/{fileName}"
-        )
+        if fileName.endswith(".ini"):
+            merge_ini_files(
+                ROOT+CONFIG["iniModsPath"]+f"{fileName}/",
+                ROOT+CONFIG["starfieldMyGameBuildLocation"]+f"/{fileName}"
+            )
+        else:
+            merge_text_files(
+                ROOT+CONFIG["iniModsPath"]+f"{fileName}/",
+                ROOT+CONFIG["starfieldMyGameBuildLocation"]+f"/{fileName}"
+            )
         logData.append(f"\nSuccessfully Built: {fileName}")
 
     # copy custom data mods to build location
     if len(os.listdir(ROOT+CONFIG["gamesDataModsPath"]))>=1:
         logData.append(f"\nTransferring any custom MyGames/Starfield/Data mods")
-        shutil.copytree(
+        transferAllDirsAndFiles(
             ROOT+CONFIG["gamesDataModsPath"],
-            ROOT+CONFIG["starfieldMyGameBuildLocation"]+"/Data"
+            ROOT+CONFIG["starfieldMyGameBuildLocation"]+"/Data/"
         )
     if len(os.listdir(os.path.join(ROOT,CONFIG["baseDataModsPath"])))>=1:
         logData.append(f"\nTransferring any custom install/Starfield/Data mods")
-        shutil.copytree(
+        transferAllDirsAndFiles(
             ROOT+CONFIG["baseDataModsPath"],
-            ROOT+CONFIG["starfieldBaseBuildLocation"]+"/Data"
+            ROOT+CONFIG["starfieldBaseBuildLocation"]+"/Data/"
+        )
+    if len(os.listdir(os.path.join(ROOT,CONFIG["baseDataModsPath"])))>=1:
+        logData.append(f"\nTransferring any custom install/Starfield file mods")
+        transferAllDirsAndFiles(
+            ROOT+CONFIG["baseModsPath"],
+            ROOT+CONFIG["starfieldBaseBuildLocation"]+"/"
         )
 
     # cleanup readme files in build
@@ -171,6 +234,8 @@ def main():
         os.remove(ROOT+CONFIG["starfieldBaseBuildLocation"]+"/Data/README.md")
     if os.path.exists(ROOT+CONFIG["starfieldMyGameBuildLocation"]+"/Data/README.md"):
         os.remove(ROOT+CONFIG["starfieldMyGameBuildLocation"]+"/Data/README.md")
+    if os.path.exists(ROOT+CONFIG["starfieldBaseBuildLocation"]+"/README.md"):
+        os.remove(ROOT+CONFIG["starfieldBaseBuildLocation"]+"/README.md")
 
     pscFailed = False
     #build all psc files
@@ -226,12 +291,16 @@ def main():
     with open(buildLog, "w") as f:
         for line in logData:
             f.write(str(line))
-    #os.system(f"notepad.exe \"{buildLog}\"")
+    os.system(f"notepad.exe \"{buildLog}\"")
     return
 
 if __name__ == "__main__":
-    main()
-    exit()
+    try:
+        main()
+    except Exception as e:
+        for line in traceback.format_exception(e):
+            print(line)
+    proceed = input("press Enter to exit...")
 
 
 

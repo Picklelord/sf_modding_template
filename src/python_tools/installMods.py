@@ -4,15 +4,17 @@ import json
 import shutil
 import time
 import subprocess
+import traceback
 
 ROOT = ""
 # set ROOT global variable
 if getattr(sys, 'frozen', False):
     # If the script is running as a compiled .exe via PyInstaller
-    ROOT = os.path.dirname(sys.executable).replace("\\", "/") + "/"
+    ROOT = os.path.dirname(sys.executable).replace("\\", "/").rsplit("/",1)[0] + "/"
 else:
     # If the script is running as a raw .py file
-    ROOT = os.path.dirname(os.path.abspath(__file__)).replace("\\", "/") + "/"
+    ROOT = os.path.dirname(os.path.abspath(__file__)).replace("\\", "/").rsplit("/",2)[0] + "/"
+
 
 
 def copy_directory(src, dest, dry_mode=False):
@@ -71,7 +73,7 @@ def runFileTransfer(CONFIG, dryRun):
     # If source directory doesn't exist, return
     if not os.path.exists(sourceMyGames) or not os.path.exists(sourceInstall):
         print("\n\nERROR: Build files don't exist!")
-        print("You need to run 'build_mods.bat' before running the installMods.exe")
+        print("You need to run 'buildMods.exe' before running the installMods.exe")
         time.sleep(10)
         return
 
@@ -147,6 +149,11 @@ def doDryRun(CONFIG, results):
             )
         if len(cFilesInstall) == 0:
             f.write("\tNone\n")
+
+        if CONFIG["doTextureDataShift"]:
+            f.write("Copying Textures from: "+ROOT + CONFIG["starfieldBaseBuildLocation"]+"\n")
+            f.write("                 - to: "+ROOT + CONFIG["starfieldMyGameBuildLocation"]+"\n")
+
     print("\n\nHey You, Your finally awake!?\n.\n")
     time.sleep(2)
     print("Log written out, please check its going to do exactly what you are expecting")
@@ -183,7 +190,7 @@ def main():
     if CONFIG["doBuildBeforeInstall"]:
         print("Rerunning BuildMods.exe")
         try:
-            result = subprocess.run([ROOT+"buildMods.exe"], capture_output=True, text=True, check=True)
+            result = subprocess.run([ROOT+"apps/buildMods.exe"], capture_output=True, text=True, check=True)
             print(result.stdout)  # This will print stdout if the command succeeds
         except subprocess.CalledProcessError as e:
             print("Command returned non-zero exit status:", e.returncode)
@@ -201,6 +208,7 @@ def main():
     else:
         results = runFileTransfer(CONFIG, True)
         doDryRun(CONFIG, results)
+        return
 
     if CONFIG["doTextureDataShift"]:
         transferTextures(
@@ -219,5 +227,9 @@ def main():
     return
 
 if __name__ == "__main__":
-    main()
-    exit()
+    try:
+        main()
+    except Exception as e:
+        for line in traceback.format_exception(e):
+            print(line)
+    proceed = input("press Enter to exit...")

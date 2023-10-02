@@ -15,24 +15,52 @@ echo ----------------------------------------
 echo Collecting existing INI files from Game Install
 IF EXIST "!starfieldMyGamesLocation:"=!\StarfieldCustom.ini" && NOT EXISTS "!iniModsPath:"=!StarfieldCustom.ini\original.ini" (
   echo Making a copy of the existing StarfieldCustom.ini to be used in compiling
+  if not exist "!iniModsPath:\StarfieldCustom.ini\" mkdir "!iniModsPath:\StarfieldCustom.ini\"
   echo F|xcopy /Y /E "!starfieldMyGamesLocation:"=!\StarfieldCustom.ini" "!iniModsPath:"=!StarfieldCustom.ini\original.ini"
 )
 IF EXIST "!starfieldMyGamesLocation:"=!\StarfieldPrefs.ini" && NOT EXISTS "!iniModsPath:"=!StarfieldPrefs.ini\original.ini"(
   echo Making a copy of the existing StarfieldPrefs.ini to be used in compiling
+  if not exist "!iniModsPath:\StarfieldPrefs.ini\" mkdir "!iniModsPath:\StarfieldPrefs.ini\"
   echo F|xcopy /Y /E "!starfieldMyGamesLocation:"=!\StarfieldPrefs.ini" "!iniModsPath:"=!StarfieldPrefs.ini\original.ini"
 )
 IF EXIST "!starfieldMyGamesLocation:"=!\StarfieldHotkeys.ini" && NOT EXISTS "!iniModsPath:"=!StarfieldHotkeys.ini\original.ini"(
   echo Making a copy of the existing StarfieldHotkeys.ini to be used in compiling
+  if not exist "!iniModsPath:\StarfieldHotkeys.ini\" mkdir "!iniModsPath:\StarfieldHotkeys.ini\"
   echo F|xcopy /Y /E "!starfieldMyGamesLocation:"=!\StarfieldHotkeys.ini" "!iniModsPath:"=!StarfieldHotkeys.ini\original.ini"
 )
 IF EXIST "!starfieldInstallLocation:"=!\Starfield.ini" && NOT EXISTS "!iniModsPath:"=!Starfield.ini\original.ini"(
   echo Making a copy of the existing Starfield.ini to be used in compiling
+  if not exist "!iniModsPath:\Starfield.ini\" mkdir "!iniModsPath:\Starfield.ini\"
   echo F|xcopy /Y /E "!starfieldInstallLocation:"=!\Starfield.ini" "!iniModsPath:"=!Starfield.ini\original.ini"
 )
 IF EXIST "!starfieldInstallLocation:"=!\StartingCommands.txt" && NOT EXISTS "!iniModsPath:"=!StartingCommands.txt\original.txt"(
   echo Making a copy of the existing StartingCommands.txt to be used in compiling
-  echo F|xcopy /Y /E "!starfieldInstallLocation:"=!\StartingCommands.txt" "!iniModsPath:"=!StartingCommands\original.txt"
+  if not exist "!iniModsPath:\StartingCommands.txt\" mkdir "!iniModsPath:\StartingCommands.txt\"
+  echo F|xcopy /Y /E "!starfieldInstallLocation:"=!\StartingCommands.txt" "!iniModsPath:"=!StartingCommands.txt\original.txt"
 )
+
+IF EXIST "!starfieldInstallLocation:"=!\Low.ini" && NOT EXISTS "!iniModsPath:"=!Low.ini\original.ini"(
+  echo Making a copy of the existing Starfield.ini to be used in compiling
+  if not exist "!iniModsPath:\Low.ini\" mkdir "!iniModsPath:\Low.ini\"
+  echo F|xcopy /Y /E "!starfieldInstallLocation:"=!\Low.ini" "!iniModsPath:"=!Low.ini\original.ini"
+)
+IF EXIST "!starfieldInstallLocation:"=!\Medium.ini" && NOT EXISTS "!iniModsPath:"=!Medium.ini\original.ini"(
+  echo Making a copy of the existing Starfield.ini to be used in compiling
+  if not exist "!iniModsPath:\Medium.ini\" mkdir "!iniModsPath:\Medium.ini\"
+  echo F|xcopy /Y /E "!starfieldInstallLocation:"=!\Medium.ini" "!iniModsPath:"=!Medium.ini\original.ini"
+)
+IF EXIST "!starfieldInstallLocation:"=!\High.ini" && NOT EXISTS "!iniModsPath:"=!High.ini\original.ini"(
+  echo Making a copy of the existing Starfield.ini to be used in compiling
+  if not exist "!iniModsPath:\High.ini\" mkdir "!iniModsPath:\High.ini\"
+  echo F|xcopy /Y /E "!starfieldInstallLocation:"=!\High.ini" "!iniModsPath:"=!High.ini\original.ini"
+)
+IF EXIST "!starfieldInstallLocation:"=!\Ultra.ini" && NOT EXISTS "!iniModsPath:"=!Ultra.ini\original.ini"(
+  echo Making a copy of the existing Starfield.ini to be used in compiling
+  if not exist "!iniModsPath:\Ultra.ini\" mkdir "!iniModsPath:\Ultra.ini\"
+  echo F|xcopy /Y /E "!starfieldInstallLocation:"=!\Ultra.ini" "!iniModsPath:"=!Ultra.ini\original.ini"
+)
+
+
 
 echo ----------------------------------------
 echo Attempting to install Caprica.exe
