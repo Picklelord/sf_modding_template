@@ -2,16 +2,13 @@ reference/
 cache/
 build/
 apps/
-
+.idea/
 src/ini_mods/Starfield.ini/original.ini
 src/ini_mods/StarfieldCustom.ini/original.ini
 src/ini_mods/StarfieldHotkeys.ini/original.ini
 src/ini_mods/StarfieldPrefs.ini/original.ini
 src/ini_mods/StartingCommands.txt/original.txt
-
 !reference/README.md
 !cache/README.md
 !build/README.md
 !apps/README.md
-!apps/installMods.exe
-!apps/buildMods.exe
