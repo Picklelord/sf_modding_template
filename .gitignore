@@ -12,3 +12,5 @@ src/ini_mods/StartingCommands.txt/original.txt
 !cache/README.md
 !build/README.md
 !apps/README.md
+!apps/buildMods.exe
+!apps/installMods.exe

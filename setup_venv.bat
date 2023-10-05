@@ -1,8 +1,10 @@
 @echo off
 setlocal ENABLEDELAYEDEXPANSION
 set ROOT_DIR=%~dp0
-FOR /F "usebackq tokens=*" %%i IN (`powershell -command "$json = Get-Content -Raw -Path %ROOT_DIR%config.json | ConvertFrom-Json; $json.starfieldInstallLocation"`) DO SET starfieldInstallLocation="!ROOT_DIR!%%i"
-FOR /F "usebackq tokens=*" %%i IN (`powershell -command "$json = Get-Content -Raw -Path %ROOT_DIR%config.json | ConvertFrom-Json; $json.starfieldMyGamesLocation"`) DO SET starfieldMyGamesLocation="!ROOT_DIR!%%i"
+
+FOR /F "usebackq tokens=*" %%i IN (`powershell -command "$json = Get-Content -Raw -Path %ROOT_DIR%config.json | ConvertFrom-Json; $json.starfieldInstallLocation"`) DO SET starfieldInstallLocation=%%i
+FOR /F "usebackq tokens=*" %%i IN (`powershell -command "$json = Get-Content -Raw -Path %ROOT_DIR%config.json | ConvertFrom-Json; $json.starfieldMyGamesLocation"`) DO SET starfieldMyGamesLocation=%%i
+FOR /F "usebackq tokens=*" %%i IN (`powershell -command "$json = Get-Content -Raw -Path %ROOT_DIR%config.json | ConvertFrom-Json; $json.pyinstallerLocation"`) DO SET pyinstallerLocation=%%i
 FOR /F "usebackq tokens=*" %%i IN (`powershell -command "$json = Get-Content -Raw -Path %ROOT_DIR%config.json | ConvertFrom-Json; $json.iniModsPath"`) DO SET iniModsPath="!ROOT_DIR!%%i"
 FOR /F "usebackq tokens=*" %%i IN (`powershell -command "$json = Get-Content -Raw -Path %ROOT_DIR%config.json | ConvertFrom-Json; $json.starfieldDecompiledScriptsLocation"`) DO SET starfieldDecompiledScriptsLocation="!ROOT_DIR!%%i"
 FOR /F "usebackq tokens=*" %%i IN (`powershell -command "$json = Get-Content -Raw -Path %ROOT_DIR%config.json | ConvertFrom-Json; $json.sevenZipUrl"`) DO SET sevenZipUrl=%%i
@@ -10,6 +12,7 @@ FOR /F "usebackq tokens=*" %%i IN (`powershell -command "$json = Get-Content -Ra
 FOR /F "usebackq tokens=*" %%i IN (`powershell -command "$json = Get-Content -Raw -Path %ROOT_DIR%config.json | ConvertFrom-Json; $json.champollionUrl"`) DO SET champollionUrl=%%i
 FOR /F "usebackq tokens=*" %%i IN (`powershell -command "$json = Get-Content -Raw -Path %ROOT_DIR%config.json | ConvertFrom-Json; $json.starfieldFlagsUrl"`) DO SET starfieldFlagsUrl=%%i
 FOR /F "usebackq tokens=*" %%i IN (`powershell -command "$json = Get-Content -Raw -Path %ROOT_DIR%config.json | ConvertFrom-Json; $json.baeManualUrl"`) DO SET baeManualUrl=%%i
+
 
 echo ----------------------------------------
 echo Collecting existing INI files from Game Install
@@ -60,10 +63,9 @@ IF EXIST "!starfieldInstallLocation:"=!\Ultra.ini" && NOT EXISTS "!iniModsPath:"
   echo F|xcopy /Y /E "!starfieldInstallLocation:"=!\Ultra.ini" "!iniModsPath:"=!Ultra.ini\original.ini"
 )
 
-
-
 echo ----------------------------------------
 echo Attempting to install Caprica.exe
+echo %ROOT_DIR%apps\Caprica.exe
 IF NOT EXIST %ROOT_DIR%apps\Caprica.exe (
   powershell -Command "Add-Type -AssemblyName System.Windows.Forms; $response = [System.Windows.Forms.MessageBox]::Show('We need you to manually download the Caprica.exe Artifact and place it into the .apps\ directory, click Ok and we will attempt to download it. Install it in and give further instructions in the console.', 'Manual Download Required', [System.Windows.Forms.MessageBoxButtons]::Ok"
   echo Unable to automatically download the Caprica Artifact, please install it manually
@@ -79,12 +81,23 @@ IF NOT EXIST %ROOT_DIR%apps\Caprica.exe (
 
 echo ----------------------------------------
 echo Attempting to install 7z.exe
+echo %ROOT_DIR%apps\7z.exe
 IF NOT EXIST %ROOT_DIR%apps\7z.exe (
   IF EXIST "C:\Program Files\7-Zip\7z.exe" (
     set sevenZipLocation="C:\Program Files\7-Zip\"
     echo 7z Found!
   ) ELSE (
-    call bitsadmin /transfer 7z_Download %sevenZipUrl% %ROOT_DIR%cache\7z.exe
+    call /b bitsadmin /transfer 7z_Download %sevenZipUrl% %ROOT_DIR%cache\7z.exe
+    IF ERRORLEVEL 1 (
+      echo An error occurred during the download.
+      echo DISPLAY: '7z_Download' TYPE: DOWNLOAD STATE: TRANSIENT_ERROR
+      echo PRIORITY: NORMAL FILES: 0 / 1 BYTES: 0 / UNKNOWN
+      echo ERROR FILE: %sevenZipUrl%
+      echo ERROR CODE: 0x80200010
+      echo ERROR CONTEXT: 0x00000002
+      echo Please try downloading it manually
+      set /p userinput="Have you downloaded 7z.exe? (Y): "
+    )
     start %ROOT_DIR%cache\7z.exe
     set /p userinput="Have you installed 7z.exe? (Y): "
     del %ROOT_DIR%cache\7z.exe
@@ -95,8 +108,19 @@ IF NOT EXIST %ROOT_DIR%apps\7z.exe (
 
 echo ----------------------------------------
 echo Attempting to install Champollion.exe
+echo %ROOT_DIR%apps\Champollion.exe
 IF NOT EXIST %ROOT_DIR%apps\Champollion.exe (
-  call bitsadmin /transfer Champollion_Download %champollionUrl% %ROOT_DIR%cache\Champollion.7z
+  call /b bitsadmin /transfer Champollion_Download %champollionUrl% %ROOT_DIR%cache\Champollion.7z
+  IF ERRORLEVEL 1 (
+    echo An error occurred during the download.
+    echo DISPLAY: 'Champollion_Download' TYPE: DOWNLOAD STATE: TRANSIENT_ERROR
+    echo PRIORITY: NORMAL FILES: 0 / 1 BYTES: 0 / UNKNOWN
+    echo ERROR FILE: %champollionUrl%
+    echo ERROR CODE: 0x80200010
+    echo ERROR CONTEXT: 0x00000002
+    echo Please try downloading it manually
+    set /p userinput="Have you downloaded Champollion.exe? (Y): "
+  )
   %sevenZipLocation%7z.exe e %ROOT_DIR%cache\Champollion.7z Champollion.exe -o%ROOT_DIR%apps\ Champollion.exe
   del %ROOT_DIR%cache\Champollion.7z
 ) ELSE (
@@ -105,26 +129,39 @@ IF NOT EXIST %ROOT_DIR%apps\Champollion.exe (
 
 echo ----------------------------------------
 echo Attempting to install Starfield_Papyrus_Flags.flg
+echo %ROOT_DIR%reference\Starfield_Papyrus_Flags.flg
 IF NOT EXIST %ROOT_DIR%reference\Starfield_Papyrus_Flags.flg (
-  call bitsadmin /transfer Starfield_Papyrus_Flags_Download %starfieldFlagsUrl% %ROOT_DIR%reference\Starfield_Papyrus_Flags.flg
+  call /b bitsadmin /transfer Starfield_Papyrus_Flags_Download %starfieldFlagsUrl% %ROOT_DIR%reference\Starfield_Papyrus_Flags.flg
+
+  :: Check for error
+  IF ERRORLEVEL 1 (
+    echo An error occurred during the download.
+    echo DISPLAY: 'Starfield_Papyrus_Flags_Download' TYPE: DOWNLOAD STATE: TRANSIENT_ERROR
+    echo PRIORITY: NORMAL FILES: 0 / 1 BYTES: 0 / UNKNOWN
+    echo ERROR FILE: %starfieldFlagsUrl%
+    echo ERROR CODE: 0x80200010
+    echo ERROR CONTEXT: 0x00000002
+    echo Please try downloading it manually from one of these locations:
+    echo -  %starfieldFlagsUrl%
+    echo -  %starfieldFlagsUrl2%
+  )
+
 ) ELSE (
   echo Starfield_Papyrus_Flags.flg Found!
 )
 
 echo ----------------------------------------
 echo Check for install of bae.exe
+echo %ROOT_DIR%apps\BAE\bae.exe
 IF NOT EXIST %ROOT_DIR%apps\BAE\bae.exe (
   echo BAE not installed, requires manual install..
-  powershell -Command "Add-Type -AssemblyName System.Windows.Forms; $response = [System.Windows.Forms.MessageBox]::Show('We need you to manually download BAE and install it into the .apps\ directory, click Ok and we will open the URL and folder to install it in and give further instructions in the console.', 'Manual Download Required', [System.Windows.Forms.MessageBoxButtons]::Ok"
+  powershell -Command "Add-Type -AssemblyName System.Windows.Forms; $response = [System.Windows.Forms.MessageBox]::Show('We need you to manually download BAE and install it into the .apps\ directory, click Ok and we will open the URL and folder to install it in and give further instructions in the console.', 'Manual Download Required', [System.Windows.Forms.MessageBoxButtons]::Ok)"
   echo You can manually download from: %baeManualUrl%
   echo The extracted BAE folder should be placed into: %ROOT_DIR%apps
   echo Once placed there, the bae should be located in: %ROOT_DIR%apps\BAE\bae.exe
   START "" %baeManualUrl%
   Start explorer.exe "%ROOT_DIR%apps"
   set /p userinput="Have you downloaded and placed the BAE folder in the location specified above? (Y): "
-  IF %userinput% == "Y" (
-    Start explorer.exe "%ROOT_DIR%apps"
-  )
 ) ELSE (
   echo BAE installation found!
 )
@@ -134,13 +171,14 @@ echo Check for Decompiled Starfield Scripts
 IF NOT EXIST %starfieldDecompiledScriptsLocation%\fragments (
   IF NOT EXIST %ROOT_DIR%cache\scripts (
     echo Starfields base Scripts have not been extracted, requires manual extraction..
-    powershell -Command "Add-Type -AssemblyName System.Windows.Forms; $response = [System.Windows.Forms.MessageBox]::Show('We need you to manually download BAE and install it into the .apps\ directory, click Ok and we will open the URL and folder to install it in and give further instructions in the console.', 'Manual Download Required', [System.Windows.Forms.MessageBoxButtons]::Ok"
-    echo You can manually extract the scripts by dragging "!starfieldInstallLocation!\Data\Starfield - Misc.ba2"
+    powershell -Command "Add-Type -AssemblyName System.Windows.Forms; $response = [System.Windows.Forms.MessageBox]::Show('We need you to manually extract the Starfield - misc.ba2, it needs to be extracted into ./cache/, click Ok and we will open the tool and folders. There will be instructions in the console.', 'Manual Extraction Required', [System.Windows.Forms.MessageBoxButtons]::Ok)"
+    echo You can manually extract the scripts by dragging %starfieldInstallLocation%\Data\Starfield - Misc.ba2
     echo The folder these should be extracted into is: %ROOT_DIR%cache
-    START %ROOT_DIR%apps\BAE\bae.exe
-    Start explorer.exe "!starfieldInstallLocation!\Data\Starfield - Misc.ba2"
+    echo Once you have done this, please confirm this folder exists: %ROOT_DIR%cache\scripts
+    Start explorer.exe "%starfieldInstallLocation%\Data"
     Start explorer.exe "%ROOT_DIR%cache"
-    set /p userinput="Have you Dragged the 'Starfield - Misc.ba2' file into BAE and extracted to the cache location specified? (Y): "
+    START %ROOT_DIR%apps\BAE\bae.exe
+    set /p userinput="Have you Dragged the 'Starfield - Misc.ba2' file into BAE and extracted to the cache location specified above? (Y): "
   ) ELSE (
     echo Starfield pex Scripts found in cache!
   )
@@ -180,17 +218,18 @@ IF EXIST %ROOT_DIR%cache\space (
 echo ----------------------------------------
 echo Build INI and TXT python compilers
 cd %ROOT_DIR%src\python_tools\
-try(
-  call %ROOT_DIR%src\python_tools\BuildPythonTools.bat
-) except (
-  echo Python 3.9+ is required to build the Python Compilers to exe's
-  echo Please install python 3.9+ to continue
-  echo Then run 'pip install pyinstaller'
-  echo And re-run this setup and it will build the python compilers needed.
-  echo Or you can download the buildMods.exe and installMods.exe and place them in "./apps"
-  set /p userinput="Would you like to download them now? (Y): "
-  IF /I "!userinput!" == "Y" (
-      START "" "https://github.com/Picklelord/sf_modding_template/releases/tag/v0.1.1"
+  IF EXIST %pyinstallerLocation% (
+    call %ROOT_DIR%src\python_tools\BuildPythonTools.bat
+  ) ELSE (
+    echo Python 3.9+ is required to build the Python Compilers to exe's
+    echo Please install python 3.9+ to continue
+    echo Then run 'pip install pyinstaller'
+    echo Re-run this setup and it will build the python compilers needed.
+    echo Or you can download the buildMods.exe and installMods.exe and place them in "./apps"
+    set /p userinput="Would you like to download them now? (Y): "
+    IF /I "%userinput%" == "Y" (
+        START "" "https://github.com/Picklelord/sf_modding_template/releases/tag/v0.1.2"
+    )
   )
 )
 
