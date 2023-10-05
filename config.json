@@ -20,5 +20,6 @@
   "sevenZipUrl": "https://www.7-zip.org/a/7z2301-x64.exe",
   "champollionUrl": "https://github.com/Orvid/Champollion/releases/download/v1.3.1/Champollion.1.3.1.7z",
   "starfieldFlagsUrl": "https://raw.githubusercontent.com/Orvid/Caprica/9cd6d32ec2750adae329e81f7276dac95251e000/test/Starfield_Papyrus_Flags.flg",
+  "starfieldFlagsUrl2": "https://github.com/Orvid/Caprica/blob/07f8f636feffab16d19e821d406af6e148474859/test/Starfield_Papyrus_Flags.flg",
   "baeManualUrl": "https://www.nexusmods.com/starfield/mods/165?tab:files&file_id:775"
 }
