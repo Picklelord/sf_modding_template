@@ -8,4 +8,6 @@ There is a **"setup_venv.bat"** that runs through the ful setup process and inst
 I have setup a Build and Install tool to provide rapid modification and testing.
 Take a look at the **"StepByStepInstructions.md"** for details on the setup process, the build process and install process.
 
+Currently this is only setup for Windows.
+
 I am in progress of writing a Papyrus Documentation Generator to provide an easier way of finding commands and scripts that will be useful etc. 
